@@ -38,6 +38,4 @@ ENV JWT_SECRET=$JWT_SECRET
 ENV RABBITMQ_URL=$RABBITMQ_URL
 ENV PORT=3000
 
-COPY start.sh .
-RUN chmod +x start.sh
-CMD ["./start.sh"]
+CMD ["bun", "run", "start:prod"]
