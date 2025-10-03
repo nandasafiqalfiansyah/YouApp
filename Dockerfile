@@ -1,40 +1,29 @@
-# Stage build
-FROM oven/bun:latest AS builder
+# Base image
+FROM node:18-alpine AS builder
 WORKDIR /app
-
-# Copy package.json dan bun.lockb
-COPY package.json bun.lockb ./
 
 # Install dependencies
+COPY package*.json ./
 RUN bun install
 
-# Copy seluruh source
+# Copy source code + prisma schema
 COPY . .
 
-# Build project (jika pakai TypeScript)
+# Install OpenSSL (Alpine)
+RUN apk add --no-cache openssl
+
+# Generate Prisma client
+RUN bun run prisma generate
+
+# Build app (kalau ada step build)
 RUN bun run build
 
-# Stage runtime
-FROM oven/bun:latest
+# Runtime image
+FROM node:18-alpine
 WORKDIR /app
 
-# Copy hasil build dari stage builder
-COPY --from=builder /app/dist ./dist
-COPY package.json bun.lockb ./
+# Copy built app + node_modules + prisma client
+COPY --from=builder /app .
 
-# Install production dependencies
-RUN bun install --production
-
-# Env inject dari build args
-ARG DATABASE_URL
-ARG JWT_SECRET
-ARG RABBITMQ_URL
-
-ENV DATABASE_URL=$DATABASE_URL
-ENV JWT_SECRET=$JWT_SECRET
-ENV RABBITMQ_URL=$RABBITMQ_URL
-ENV PORT=3000
-
-COPY start.sh .
-RUN chmod +x start.sh
-CMD ["./start.sh"]
+# Jalankan server
+CMD ["bun", "run", "start:prod"]
