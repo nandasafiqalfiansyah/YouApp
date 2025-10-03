@@ -1,15 +1,26 @@
 # Base image
-FROM node:18-alpine AS builder
+FROM node:18-alpine
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies Bun + OS libs
+RUN apk add --no-cache curl bash
+
+# Install Bun
+RUN curl -fsSL https://bun.sh/install | bash
+
+# Set Bun path
+ENV PATH="/root/.bun/bin:$PATH"
+
+# Copy package.json
 COPY package*.json ./
+
+# Install dependencies
 RUN bun install
 
-# Copy source code + prisma schema
+# Copy source code + Prisma schema
 COPY . .
 
-# Install OpenSSL (Alpine)
+# Install OpenSSL untuk Prisma
 RUN apk add --no-cache openssl
 
 # Generate Prisma client
@@ -18,12 +29,5 @@ RUN bun run prisma generate
 # Build app (kalau ada step build)
 RUN bun run build
 
-# Runtime image
-FROM node:18-alpine
-WORKDIR /app
-
-# Copy built app + node_modules + prisma client
-COPY --from=builder /app .
-
-# Jalankan server
+# Start server
 CMD ["bun", "run", "start:prod"]
