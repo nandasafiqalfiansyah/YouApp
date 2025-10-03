@@ -37,3 +37,4 @@ jobs:
             DATABASE_URL=${{ secrets.DATABASE_URL }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}
+            PORT=3000
