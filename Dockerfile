@@ -16,6 +16,9 @@ RUN bun install
 # Copy seluruh source code + prisma folder
 COPY . .
 
+# Pastikan Prisma binary target sesuai dengan runtime container
+RUN sed -i 's/binaryTargets = \[.*\]/binaryTargets = ["native","debian-openssl-1.1.x"]/g' prisma/schema.prisma
+
 # Generate Prisma client
 RUN bun run prisma generate
 
@@ -40,13 +43,17 @@ COPY prisma ./prisma
 ARG DATABASE_URL
 ARG JWT_SECRET
 ARG RABBITMQ_URL
+ENV DATABASE_URL=$DATABASE_URL
+ENV JWT_SECRET=$JWT_SECRET
+ENV RABBITMQ_URL=$RABBITMQ_URL
+ENV PORT=3000
 
+# Buat .env file otomatis
 RUN echo "DATABASE_URL=${DATABASE_URL}" > .env \
     && echo "JWT_SECRET=${JWT_SECRET}" >> .env \
     && echo "RABBITMQ_URL=${RABBITMQ_URL}" >> .env \
     && echo "PORT=${PORT}" >> .env
 
 EXPOSE 3000
-
 
 CMD ["bun", "run", "start:prod"]
