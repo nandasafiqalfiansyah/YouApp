@@ -1,17 +1,29 @@
 # Stage build
-FROM node:18-alpine AS builder
+FROM oven/bun:latest AS builder
 WORKDIR /app
-COPY package*.json ./
-RUN npm install
+
+# Copy package.json dan bun.lockb
+COPY package.json bun.lockb ./
+
+# Install dependencies
+RUN bun install
+
+# Copy seluruh source
 COPY . .
-RUN npm run build
+
+# Build project (jika pakai TypeScript)
+RUN bun run build
 
 # Stage runtime
-FROM node:18-alpine
+FROM oven/bun:latest
 WORKDIR /app
+
+# Copy hasil build dari stage builder
 COPY --from=builder /app/dist ./dist
-COPY package*.json ./
-RUN npm install --omit=dev
+COPY package.json bun.lockb ./
+
+# Install production dependencies
+RUN bun install --production
 
 # Env inject dari build args
 ARG DATABASE_URL
@@ -23,4 +35,5 @@ ENV JWT_SECRET=$JWT_SECRET
 ENV RABBITMQ_URL=$RABBITMQ_URL
 ENV PORT=3000
 
-CMD ["node", "dist/main.js"]
+# Jalankan app pakai Bun
+CMD ["bun", "run", "start:prod"]
