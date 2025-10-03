@@ -1,33 +1,43 @@
-# Base image
-FROM node:18-alpine
+# Stage build
+FROM oven/bun:latest AS builder
 WORKDIR /app
 
-# Install dependencies Bun + OS libs
-RUN apk add --no-cache curl bash
-
-# Install Bun
-RUN curl -fsSL https://bun.sh/install | bash
-
-# Set Bun path
-ENV PATH="/root/.bun/bin:$PATH"
-
-# Copy package.json
-COPY package*.json ./
+# Copy package.json dan bun.lockb
+COPY package.json bun.lockb ./
 
 # Install dependencies
 RUN bun install
 
-# Copy source code + Prisma schema
+# Copy seluruh source
 COPY . .
-
-# Install OpenSSL untuk Prisma
-RUN apk add --no-cache openssl
 
 # Generate Prisma client
 RUN bun run prisma generate
 
-# Build app (kalau ada step build)
+# Build project (jika pakai TypeScript)
 RUN bun run build
 
-# Start server
-CMD ["bun", "run", "start:prod"]
+# Stage runtime
+FROM oven/bun:latest
+WORKDIR /app
+
+# Copy hasil build dari stage builder
+COPY --from=builder /app/dist ./dist
+COPY package.json bun.lockb ./
+
+# Install production dependencies
+RUN bun install --production
+
+# Env inject dari build args
+ARG DATABASE_URL
+ARG JWT_SECRET
+ARG RABBITMQ_URL
+
+ENV DATABASE_URL=$DATABASE_URL
+ENV JWT_SECRET=$JWT_SECRET
+ENV RABBITMQ_URL=$RABBITMQ_URL
+ENV PORT=3000
+
+COPY start.sh .
+RUN chmod +x start.sh
+CMD ["./start.sh"]
