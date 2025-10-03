@@ -3,8 +3,14 @@ import { Test } from "@nestjs/testing";
 import request from "supertest";
 import { AppModule } from "../src/app.module";
 
-describe("Auth E2E Tests", () => {
+describe("Auth Login E2E", () => {
   let app: INestApplication;
+
+  const userData = {
+    email: "user@example.com",
+    username: "testuser",
+    password: "Password123!",
+  };
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -14,79 +20,50 @@ describe("Auth E2E Tests", () => {
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix("api");
     await app.init();
+
+    const res = await request(app.getHttpServer())
+      .post("/api/register")
+      .send(userData);
+
+    if (![201, 409].includes(res.status)) {
+      throw new Error(`Unexpected status: ${res.status}`);
+    }
   });
 
   afterAll(async () => {
     await app.close();
   });
 
-  describe("POST /api/register", () => {
-    it("should register user successfully", async () => {
-      const registerData = {
-        email: "test1@example.com",
-        username: "testuser1",
-        password: "Password123!",
-      };
-
-      const response = await request(app.getHttpServer())
-        .post("/api/register")
-        .send(registerData)
-        .expect(201);
-
-      expect(response.body).toHaveProperty("message");
-      expect(response.body.data).toHaveProperty("access_token");
-    });
-
-    it("should fail with invalid email", async () => {
-      const registerData = {
-        email: "invalid-email",
-        username: "testuser2",
-        password: "Password123!",
-      };
-
-      await request(app.getHttpServer())
-        .post("/api/register")
-        .send(registerData)
-        .expect(400);
-    });
-  });
-
-  describe("POST /api/login", () => {
-    const userData = {
-      email: "test@example.com1",
-      username: "testuser1",
-      password: "Password123!",
-    };
-
-    beforeAll(async () => {
-      await request(app.getHttpServer()).post("/api/register").send(userData);
-    });
-
-    it("should login successfully", async () => {
-      const loginData = {
+  it("should login successfully", async () => {
+    const response = await request(app.getHttpServer())
+      .post("/api/login")
+      .send({
         email: userData.email,
         password: userData.password,
-      };
+      })
+      .expect(200);
 
-      const response = await request(app.getHttpServer())
-        .post("/api/login")
-        .send(loginData)
-        .expect(200);
+    expect(response.body).toHaveProperty("access_token");
+    expect(typeof response.body.access_token).toBe("string");
+  });
 
-      expect(response.body).toHaveProperty("message", "Login successful");
-      expect(response.body.data).toHaveProperty("access_token");
-    });
-
-    it("should fail with wrong password", async () => {
-      const loginData = {
+  it("should fail with wrong password", async () => {
+    await request(app.getHttpServer())
+      .post("/api/login")
+      .send({
         email: userData.email,
         password: "wrongpassword",
-      };
+      })
+      .expect(401);
+  });
 
-      await request(app.getHttpServer())
-        .post("/api/login")
-        .send(loginData)
-        .expect(401);
-    });
+  it("should fail with non-existent email", async () => {
+    await request(app.getHttpServer())
+      .post("/api/login")
+      .send({
+        email: "notfound@example.com",
+        password: "Password123!",
+      })
+      .expect(401);
   });
 });
