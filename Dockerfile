@@ -48,4 +48,5 @@ RUN echo "DATABASE_URL=${DATABASE_URL}" > .env \
 
 EXPOSE 3000
 
+
 CMD ["bun", "run", "start:prod"]
