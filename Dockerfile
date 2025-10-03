@@ -4,8 +4,8 @@
 FROM oven/bun:latest AS builder
 WORKDIR /app
 
-# Install OS deps untuk Prisma (OpenSSL)
-RUN apk add --no-cache openssl bash curl
+# Install OS deps untuk Prisma
+RUN apt-get update && apt-get install -y openssl curl bash && rm -rf /var/lib/apt/lists/*
 
 # Copy package.json + bun.lockb
 COPY package.json bun.lockb ./
@@ -28,12 +28,12 @@ RUN bun run build
 FROM oven/bun:latest
 WORKDIR /app
 
-# Copy hasil build dari builder
+# Copy hasil build + node_modules + prisma client
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY package.json bun.lockb ./
 
-# Copy Prisma schema jika mau run migrate di runtime (opsional)
+# Copy Prisma folder jika mau migrate runtime
 COPY prisma ./prisma
 
 # Environment variables via build args
@@ -46,8 +46,6 @@ ENV JWT_SECRET=$JWT_SECRET
 ENV RABBITMQ_URL=$RABBITMQ_URL
 ENV PORT=3000
 
-# Expose port
 EXPOSE 3000
 
-# Start NestJS production server
 CMD ["bun", "run", "start:prod"]
