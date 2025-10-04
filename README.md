@@ -66,7 +66,7 @@ This project is designed to be **scalable** and supports several key features:
 
 ```bash
 # Install dependencies
-$ yarn install
+$ bun install
 ```
 
 ---
@@ -75,13 +75,13 @@ $ yarn install
 
 ```bash
 # Development
-$ yarn start
+$ bun start
 
 # Watch mode
-$ yarn start:dev
+$ bun start:dev
 
 # Production mode
-$ yarn start:prod
+$ bun start:prod
 ```
 
 ---
@@ -90,13 +90,13 @@ $ yarn start:prod
 
 ```bash
 # Unit tests
-$ yarn test
+$ bun test
 
 # E2E tests
-$ yarn test:e2e
+$ bun test:e2e
 
 # Coverage
-$ yarn test:cov
+$ bun test:cov
 ```
 
 ---
